@@ -1,0 +1,335 @@
+// ── Hero Typing Animation ──
+(function initTyping() {
+  const line1 = document.getElementById('typing-line-1');
+  const line2 = document.getElementById('typing-line-2');
+  if (!line1 || !line2) return;
+
+  const TEXT_1     = 'PORTFOLIO';
+  const TEXT_2     = '2026';
+  const CHAR_SPEED = 80;   // ms per character
+  const LINE_PAUSE = 220;  // ms pause between lines
+  const END_PAUSE  = 900;  // ms before cursor disappears
+
+  // Use inner text spans so cursor element never contaminates textContent
+  const t1 = document.createElement('span');
+  const t2 = document.createElement('span');
+  const cursor = document.createElement('span');
+  cursor.className = 'hero-cursor';
+  cursor.textContent = '|';
+
+  line1.appendChild(t1);
+  line1.appendChild(cursor); // cursor starts after line1
+
+  function typeInto(el, text) {
+    return new Promise((resolve) => {
+      let i = 0;
+      const tick = setInterval(() => {
+        el.textContent += text[i++];
+        if (i >= text.length) { clearInterval(tick); resolve(); }
+      }, CHAR_SPEED);
+    });
+  }
+
+  async function run() {
+    await new Promise((r) => setTimeout(r, 400));
+
+    await typeInto(t1, TEXT_1);
+    await new Promise((r) => setTimeout(r, LINE_PAUSE));
+
+    // move cursor to line2
+    line2.appendChild(t2);
+    line2.appendChild(cursor);
+
+    await typeInto(t2, TEXT_2);
+    await new Promise((r) => setTimeout(r, END_PAUSE));
+
+    // fade out cursor and remove
+    cursor.style.transition = 'opacity 0.5s';
+    cursor.style.opacity    = '0';
+    setTimeout(() => cursor.remove(), 600);
+  }
+
+  run();
+})();
+
+// ── Hero Background Upload ──
+(function initHeroBg() {
+  const zone    = document.getElementById('hero-bg-zone');
+  const input   = document.getElementById('hero-bg-input');
+  const hero    = document.querySelector('.hero');
+  if (!zone || !input) return;
+
+  const BG_KEY = 'hero_bg';
+
+  // restore saved background
+  const saved = localStorage.getItem(BG_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    applyBg(parsed.type, parsed.src);
+  }
+
+  // also try auto-load from assets/images/page-01.*
+  if (!saved) {
+    const exts = ['jpg', 'jpeg', 'png', 'webp'];
+    function tryBgImg(idx) {
+      if (idx >= exts.length) return;
+      const src  = `assets/images/page-01.${exts[idx]}`;
+      const test = new Image();
+      test.onload  = () => applyBg('image', src);
+      test.onerror = () => tryBgImg(idx + 1);
+      test.src = src;
+    }
+    tryBgImg(0);
+  }
+
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const type = file.type.startsWith('video') ? 'video' : 'image';
+      applyBg(type, ev.target.result);
+      try { localStorage.setItem(BG_KEY, JSON.stringify({ type, src: ev.target.result })); } catch {}
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // drag & drop on hero
+  hero.addEventListener('dragover', (e) => { e.preventDefault(); });
+  hero.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file || (!file.type.startsWith('image') && !file.type.startsWith('video'))) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const type = file.type.startsWith('video') ? 'video' : 'image';
+      applyBg(type, ev.target.result);
+      try { localStorage.setItem(BG_KEY, JSON.stringify({ type, src: ev.target.result })); } catch {}
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function applyBg(type, src) {
+    // remove existing media
+    zone.querySelectorAll('img, video').forEach((el) => el.remove());
+
+    let media;
+    if (type === 'video') {
+      media = document.createElement('video');
+      media.src        = src;
+      media.autoplay   = true;
+      media.loop       = true;
+      media.muted      = true;
+      media.playsInline = true;
+    } else {
+      media = document.createElement('img');
+      media.src = src;
+      media.alt = '';
+    }
+    media.className = 'hero-bg-media';
+    zone.insertBefore(media, zone.firstChild);
+    zone.classList.add('has-media');
+
+    // add replace button if not already there
+    if (!hero.querySelector('.hero-bg-replace')) {
+      const btn = document.createElement('button');
+      btn.className   = 'hero-bg-replace visible';
+      btn.textContent = '배경 교체';
+      btn.addEventListener('click', () => {
+        zone.querySelectorAll('img, video').forEach((el) => el.remove());
+        zone.classList.remove('has-media');
+        btn.remove();
+        localStorage.removeItem(BG_KEY);
+        input.value = '';
+      });
+      hero.appendChild(btn);
+    }
+  }
+})();
+
+// ── Config ──
+const TOTAL_PAGES = 45; // pages 2–46
+const STORAGE_KEY = 'portfolio_slots';
+
+// ── Load saved slots from localStorage ──
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveSaved(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ── Build portfolio section ──
+const section = document.getElementById('portfolio');
+const saved   = loadSaved();
+
+for (let i = 1; i <= TOTAL_PAGES; i++) {
+  const pageNum = i + 1; // pages 2–46
+  const slot    = document.createElement('div');
+  slot.className   = 'portfolio-slot';
+  slot.dataset.index = i;
+
+  // page-02 gets anchor id for CONTACT nav link
+  if (i === 1) slot.id = 'page-02';
+
+  // page number badge
+  const numBadge = document.createElement('span');
+  numBadge.className   = 'slot-num';
+  numBadge.textContent = `${String(pageNum).padStart(2, '0')} / 46`;
+  slot.appendChild(numBadge);
+
+  // upload zone
+  const zone = document.createElement('div');
+  zone.className = 'upload-zone';
+  zone.innerHTML = `
+    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M12 16V8M8 12l4-4 4 4"/>
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke-opacity=".4"/>
+    </svg>
+    <span class="upload-label">이미지 또는 영상을 드래그하거나 클릭하여 업로드</span>
+    <input type="file" accept="image/*,video/*" />
+  `;
+  slot.appendChild(zone);
+
+  const fileInput = zone.querySelector('input[type="file"]');
+
+  // ── Auto-load from assets folder ──
+  const padded  = String(pageNum).padStart(2, '0');
+  const videoSrc = `assets/videos/page-${padded}.mp4`;
+  const imgExts  = ['jpg', 'jpeg', 'png', 'webp'];
+
+  function tryLoadImage(s, z, exts, idx) {
+    if (idx >= exts.length) {
+      const sv = loadSaved();
+      if (sv[s.dataset.index]) renderMedia(s, z, sv[s.dataset.index].type, sv[s.dataset.index].src);
+      return;
+    }
+    const src  = `assets/images/page-${s.querySelector('.slot-num').textContent.slice(0,2)}.${exts[idx]}`;
+    const test = new Image();
+    test.onload  = () => renderMedia(s, z, 'image', src);
+    test.onerror = () => tryLoadImage(s, z, exts, idx + 1);
+    test.src = src;
+  }
+
+  (function (s, z, vSrc, pg) {
+    const padPg = String(pg).padStart(2, '0');
+    const vidEl = document.createElement('video');
+    vidEl.oncanplay = () => { vidEl.remove(); renderMedia(s, z, 'video', vSrc); };
+    vidEl.onerror   = () => {
+      vidEl.remove();
+      // try image extensions
+      const exts = ['jpg', 'jpeg', 'png', 'webp'];
+      function tryImg(idx) {
+        if (idx >= exts.length) {
+          const sv = loadSaved();
+          if (sv[s.dataset.index]) renderMedia(s, z, sv[s.dataset.index].type, sv[s.dataset.index].src);
+          return;
+        }
+        const src  = `assets/images/page-${padPg}.${exts[idx]}`;
+        const test = new Image();
+        test.onload  = () => renderMedia(s, z, 'image', src);
+        test.onerror = () => tryImg(idx + 1);
+        test.src = src;
+      }
+      tryImg(0);
+    };
+    vidEl.src     = vSrc;
+    vidEl.preload = 'metadata';
+  })(slot, zone, videoSrc, pageNum);
+
+  // ── File input change ──
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    handleFile(slot, zone, file, i);
+  });
+
+  // ── Drag & drop ──
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    handleFile(slot, zone, file, i);
+  });
+
+  section.appendChild(slot);
+}
+
+// ── Handle uploaded file ──
+function handleFile(slot, zone, file, index) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const src  = e.target.result;
+    const type = file.type.startsWith('video') ? 'video' : 'image';
+    renderMedia(slot, zone, type, src);
+    try {
+      const sv = loadSaved();
+      sv[index] = { type, src };
+      saveSaved(sv);
+    } catch { /* quota exceeded for large files */ }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Render image or video inside slot ──
+function renderMedia(slot, zone, type, src) {
+  slot.querySelectorAll('img, video').forEach((el) => el.remove());
+  zone.classList.add('hidden');
+
+  if (type === 'video') {
+    const vid = document.createElement('video');
+    vid.src         = src;
+    vid.autoplay    = true;
+    vid.loop        = true;
+    vid.playsInline = true;
+    vid.muted       = true;
+    vid.controls    = false;
+    slot.appendChild(vid);
+  } else {
+    const img = document.createElement('img');
+    img.src     = src;
+    img.alt     = '';
+    img.loading = 'lazy';
+    slot.appendChild(img);
+  }
+
+}
+
+// ── Custom Cursor ──
+(function initCursor() {
+  const cursor = document.getElementById('custom-cursor');
+  if (!cursor) return;
+
+  document.addEventListener('mousemove', (e) => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+    if (!cursor.classList.contains('visible')) cursor.classList.add('visible');
+  });
+
+  document.addEventListener('mouseleave', () => cursor.classList.remove('visible'));
+  document.addEventListener('mouseenter', () => cursor.classList.add('visible'));
+})();
+
+// ── Active nav highlight ──
+const navLinks       = document.querySelectorAll('.nav-links a');
+const trackedSections = document.querySelectorAll('section[id], div[id]');
+
+const navObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        navLinks.forEach((a) => a.classList.remove('active'));
+        const active = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  },
+  { threshold: 0.3 }
+);
+
+trackedSections.forEach((s) => navObserver.observe(s));
