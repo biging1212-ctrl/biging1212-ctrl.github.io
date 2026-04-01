@@ -392,12 +392,68 @@ img, video { display: block; width: 100%; }
   font-family: var(--font);
 }
 
+/* ── Page 46: Closing ── */
+/*
+  Figma 1920×1080 기준
+  vw = px ÷ 1920 × 100
+  vh = px ÷ 1080 × 100
+*/
+.closing-page {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #F8F6F6;
+  overflow: hidden;
+}
+
+.closing-page span {
+  position: absolute;
+  font-family: var(--font);
+}
+
+.cl-name {
+  /* 50px @ 1920 = 2.604vw */
+  font-size: clamp(18px, 2.604vw, 50px);
+  font-weight: 700;
+  color: #000;
+}
+
+.cl-title {
+  font-size: clamp(18px, 2.604vw, 50px);
+  font-weight: 700;
+  line-height: 1.17;
+  color: #000;
+}
+
+.cl-sub {
+  /* 20px @ 1920 = 1.042vw */
+  font-size: clamp(9px, 1.042vw, 20px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #000;
+  text-transform: uppercase;
+}
+
+.cl-label {
+  font-size: clamp(9px, 1.042vw, 20px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: #606060;
+}
+
+.cl-value {
+  font-size: clamp(9px, 1.042vw, 20px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: #000;
+}
+
 /* ── Download Section ── */
 .download-section {
   background: #F8F6F6;
   color: var(--black);
   width: 100%;
-  aspect-ratio: 16 / 9;
+  padding: 80px 0;
   display: flex;
   align-items: center;
   justify-content: center;

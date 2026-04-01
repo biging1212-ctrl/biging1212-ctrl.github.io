@@ -148,7 +148,7 @@
 })();
 
 // ── Config ──
-const TOTAL_PAGES = 45; // pages 2–46
+const TOTAL_PAGES = 44; // pages 2–45 (page 46 = closing HTML)
 const STORAGE_KEY = 'portfolio_slots';
 
 // ── Load saved slots from localStorage ──
