@@ -200,6 +200,8 @@ function renderMedia(slot, zone, type, src) {
     img.src     = src;
     img.alt     = '';
     img.loading = 'lazy';
+    img.decoding = 'async';
+    img.onload  = () => img.classList.add('loaded');
     slot.appendChild(img);
   }
 
